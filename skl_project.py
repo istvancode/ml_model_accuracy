@@ -4,12 +4,11 @@ import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 import pickle
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 mm_scaler = MinMaxScaler()
 st_scaler = StandardScaler()
@@ -54,10 +53,25 @@ with mlflow.start_run():
     mm_preds = mm_logreg.predict(X_test_scaled)
     st_preds = st_logreg.predict(X_test_st_scaled)
 
-    # pontok
+    # _________________________________________MÉRÉSEK BLOKK
+    # Accuracy
     score = accuracy_score(y_test, predictions)
     mm_score = accuracy_score(y_test, mm_preds)
     st_score = accuracy_score(y_test, st_preds)
+
+    # Precision, Recall, F1 (átlagolás = 'weighted', mert több kategória van)
+    dt_prec = precision_score(y_test, predictions, average="weighted")
+    dt_rec = recall_score(y_test, predictions, average="weighted")
+    dt_f1 = f1_score(y_test, predictions, average="weighted")
+
+    mm_prec = precision_score(y_test, mm_preds, average="weighted")
+    mm_rec = recall_score(y_test, mm_preds, average="weighted")
+    mm_f1 = f1_score(y_test, mm_preds, average="weighted")
+
+    st_prec = precision_score(y_test, st_preds, average="weighted")
+    st_rec = recall_score(y_test, st_preds, average="weighted")
+    st_f1 = f1_score(y_test, st_preds, average="weighted")
+    # _________________________________________MÉRÉSEK BLOKK VÉGE
 
     # Log paraméterek
     mlflow.log_param("max_depth", 5)
@@ -66,6 +80,18 @@ with mlflow.start_run():
     mlflow.log_metric("DecTree - accuracy", score)
     mlflow.log_metric("Logreg - mm_accuracy", mm_score)
     mlflow.log_metric("Logreg - st_accuracy", st_score)
+
+    mlflow.log_metric("DecTree - precision", dt_prec)
+    mlflow.log_metric("DecTree - recall", dt_rec)
+    mlflow.log_metric("DecTree - f1", dt_f1)
+
+    mlflow.log_metric("LogregMM - precision", mm_prec)
+    mlflow.log_metric("LogregMM - recall", mm_rec)
+    mlflow.log_metric("LogregMM - f1", mm_f1)
+
+    mlflow.log_metric("LogregST - precision", st_prec)
+    mlflow.log_metric("LogregST - recall", st_rec)
+    mlflow.log_metric("LogregST - f1", st_f1)
 
     # Modell mentése
     mlflow.sklearn.log_model(model, "model")
@@ -76,10 +102,28 @@ print("DecTree - score:", score)
 print("Logreg - mm_score:", mm_score)
 print("Logreg - st_score:", st_score)
 
+# print("\n--- Döntési fa ---")
+# print(classification_report(y_test, predictions))
+
+# print("\n--- LogReg (MinMax) ---")
+# print(classification_report(y_test, mm_preds))
+
+# print("\n--- LogReg (Standard) ---")
+# print(classification_report(y_test, st_preds))
+
 scores = {
     "DecisionTree": score,
     "LogReg (MinMax)": mm_score,
-    "LogReg (Standard)": st_score
+    "LogReg (Standard)": st_score,
+    "DecTree - precision": dt_prec,
+    "DecTree - recall": dt_rec,
+    "DecTree - f1": dt_f1,
+    "LogregMM - precision": mm_prec,
+    "LogregMM - recall": mm_rec,
+    "LogregMM - f1": mm_f1,
+    "LogregST - precision": st_prec,
+    "LogregST - recall": st_rec,
+    "LogregST - f1": st_f1
 }
 
 
